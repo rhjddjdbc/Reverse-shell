@@ -13,7 +13,6 @@ fi
 
 GPG_KEY="$GPG_KEY_DATA"
 
-
 # Write key to temp file
 KEY_FILE=$(mktemp)
 echo "$GPG_KEY" > "$KEY_FILE"
