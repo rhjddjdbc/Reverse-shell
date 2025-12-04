@@ -2,15 +2,17 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-# Embedded GPG RSA private key (ASCII-armored)
-GPG_KEY=$(cat <<'EOF'
------BEGIN PGP PRIVATE KEY BLOCK-----
+# GPG RSA private key is provided through an environment variable
+# Example before running the script:
+#   export GPG_KEY_DATA="$(cat /path/to/privatekey.asc)"
 
-<YOUR FULL PRIVATE KEY BLOCK HERE>
+if [[ -z "${GPG_KEY_DATA:-}" ]]; then
+    echo "Error: environment variable GPG_KEY_DATA is not set." >&2
+    exit 1
+fi
 
------END PGP PRIVATE KEY BLOCK-----
-EOF
-)
+GPG_KEY="$GPG_KEY_DATA"
+
 
 # Write key to temp file
 KEY_FILE=$(mktemp)
